@@ -1,5 +1,5 @@
 import express from 'express';
-import { MongoClient } from 'mongodb';
+import { MongoClient, ObjectId } from 'mongodb';
 import 'dotenv/config';
 import cors from 'cors'
 const app = express();
@@ -45,10 +45,16 @@ app.get('/books',async (req,res) =>{
      res.send(result);
 })
 
-// app.get('books/:id',(req,res) =>
-// )
+app.get('/books/:id',async(req,res) =>{
+   const {id} =req.params;
+   const result = await bookCollection.findOne({_id:new ObjectId(id)});
+   res.send(result)
+ })
+ 
 
-// http://localhost:8000/books
+
+
+// http://localhost:8000/books/id
 
 app.get('/', (req, res) => {
   res.send('Server Running ')
