@@ -67,6 +67,14 @@ app.patch('/books/:id',async(req,res)=>{
 })
 
 
+app.delete('/book/:id', async(req, res) => {
+  const {id} = req.params
+  const result = await bookCollection.deleteOne({_id: new ObjectId(id)})
+  res.json(result)
+})
+
+
+
 
 // POST /borrow-book → record a borrow, decrement available copies
 app.post('/borrow-book', async (req, res) => {
