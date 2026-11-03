@@ -36,6 +36,7 @@ const borrowCollection = db.collection('borrows');
 app.post('/add-book', async (req,res) =>{
 
   const data = req.body
+  data.totalCopies = Number(data.totalCopies);
   const result = await bookCollection.insertOne(data);
   res.send(result)
 });
@@ -74,12 +75,66 @@ app.delete('/book/:id', async(req, res) => {
   res.json(result)
 })
 
-app.post('/borrows', async (req, res) => {
-    const data = req.body;
-  const result = await bookingCollection.insertOne(data)
-  res.send(result)
+app.post("/borrows", async (req, res) => {
+  try {
+    const borrowData = req.body;
+    const { bookId, userEmail } = borrowData;
 
-    res.send(result);
+    // Check duplicate borrow
+    const alreadyBorrowed = await borrowCollection.findOne({
+      bookId,
+      userEmail,
+      status: "borrowed",
+    });
+
+    if (alreadyBorrowed) {
+      return res.status(400).send({
+        success: false,
+        message: "You have already borrowed this book!",
+      });
+    }
+
+    // Decrease totalCopies by 1
+    const bookResult = await bookCollection.updateOne(
+      {
+        _id: new ObjectId(bookId),
+        totalCopies: { $gt: 0 },
+      },
+      {
+        $inc: { totalCopies: -1 },
+      }
+    );
+
+    if (bookResult.modifiedCount === 0) {
+      return res.status(400).send({
+        success: false,
+        message: "Book is not available!",
+      });
+    }
+
+    // Insert borrow data
+    const result = await borrowCollection.insertOne({
+      ...borrowData,
+      status: "borrowed",
+      borrowDate: new Date(),
+      returnDate: null,
+      createdAt: new Date(),
+    });
+
+    res.status(201).send({
+      success: true,
+      message: "Book borrowed successfully!",
+      result,
+    });
+
+  } catch (error) {
+    console.error("Borrow Error:", error);
+
+    res.status(500).send({
+      success: false,
+      message: error.message,
+    });
+  }
 });
 app.post('/borrow', async(req, res) => {
   const data = req.body
@@ -89,16 +144,134 @@ app.post('/borrow', async(req, res) => {
 
 
 
-app.get('/my-borrows/:email', async(req, res) => {
-  const {email} = req.params
-  const result= await borrowCollection.find({userEmail:email}).toArray()
-  res.send(result)
-})
+app.get("/my-borrows", async (req, res) => {
+  try {
+    const { email } = req.query;
+
+    console.log("Requested Email:", email);
+
+    if (!email) {
+      return res.status(400).send({
+        message: "Email is required",
+      });
+    }
+
+    const result = await borrowCollection
+      .find({ userEmail: email })
+      .sort({ createdAt: -1 })
+      .toArray();
+
+    console.log("Borrowed Books:", result);
+
+    res.status(200).send(result);
+
+  } catch (error) {
+    console.error("GET MY BORROWS ERROR:", error);
+
+    res.status(500).send({
+      message: "Failed to fetch borrowed books",
+    });
+  }
+});
+
+app.delete("/borrows/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Check valid MongoDB ObjectId
+    if (!ObjectId.isValid(id)) {
+      return res.status(400).send({
+        success: false,
+        message: "Invalid borrow ID",
+      });
+    }
+
+    // Find borrow data
+    const borrow = await borrowCollection.findOne({
+      _id: new ObjectId(id),
+      status: "borrowed",
+    });
+
+    if (!borrow) {
+      return res.status(404).send({
+        success: false,
+        message: "Borrow not found or already returned",
+      });
+    }
+
+    // Validate bookId
+    if (!ObjectId.isValid(String(borrow.bookId))) {
+      return res.status(400).send({
+        success: false,
+        message: "Invalid book ID",
+      });
+    }
+
+    // Update borrow status
+    const result = await borrowCollection.updateOne(
+      {
+        _id: new ObjectId(id),
+        status: "borrowed",
+      },
+      {
+        $set: {
+          status: "returned",
+          returnDate: new Date(),
+        },
+      }
+    );
+
+    if (result.modifiedCount === 0) {
+      return res.status(409).send({
+        success: false,
+        message: "Book already returned",
+      });
+    }
+
+    // Increase totalCopies by 1
+    const bookResult = await bookCollection.updateOne(
+      {
+        _id: new ObjectId(String(borrow.bookId)),
+      },
+      {
+        $inc: {
+          totalCopies: 1,
+        },
+      }
+    );
+
+    if (bookResult.matchedCount === 0) {
+      return res.status(404).send({
+        success: false,
+        message: "Book not found",
+      });
+    }
+
+    res.send({
+      success: true,
+      message: "Book returned successfully!",
+    });
+
+  } catch (error) {
+    console.error("Return API Error:", error);
+
+    res.status(500).send({
+      success: false,
+      message: error.message,
+    });
+  }
+});
 
 
 
 
-// http://localhost:8000/books/id
+
+
+
+
+
+
+// http://localhost:8000/my-borrows
 
 app.get('/', (req, res) => {
   res.send('Server Running ')
