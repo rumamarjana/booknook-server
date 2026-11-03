@@ -26,23 +26,32 @@ app.use(express.json())
 
 const mongoClient = await connectToMongoDB()
 const db = mongoClient.db("booknook_db")
-const bookCollection =  db.collection("book")
+const bookCollection = db.collection("book")
 const borrowCollection = db.collection('borrows');
 
-const verifyToken  = async(req,res,next) =>{
+const verifyToken = async (req, res, next) => {
   const authHeader = req.headers.authorization;
-  console.log(authHeader);
-
-  if(authHeader !== "user logged in "){
-    return res.status(401).send({msg: "Unauthorize"});
+  if (!authHeader) {
+    return res.status(401).send({ msg: "Unauthorized!" });
   }
-  console.log('i am');
+  const token = authHeader.split(" ")[1];
+  if (!token) {
+    return res.status(401).send({ msg: "Unauthorized!" });
+  }
+
+
+
+
+
+
+  
+  console.log(token)
   next();
 }
 
 
 
-app.post('/add-book',verifyToken , async (req,res) =>{
+app.post('/add-book', verifyToken, async (req, res) => {
 
   const data = req.body
   data.totalCopies = Number(data.totalCopies);
@@ -51,42 +60,42 @@ app.post('/add-book',verifyToken , async (req,res) =>{
 });
 
 
-app.get('/books',async (req,res) =>{
+app.get('/books', async (req, res) => {
   const result = await bookCollection.find().toArray();
-     res.send(result);
+  res.send(result);
 })
 
-app.get('/books/:id',verifyToken ,async(req,res) =>{
-const authHeader = req.headers.authorization;
+app.get('/books/:id', verifyToken, async (req, res) => {
+  const authHeader = req.headers.authorization;
   console.log(authHeader)
-   try {
-     const {id} =req.params;
-     const result = await bookCollection.findOne({_id:new ObjectId(id)});
-     if (!result) return res.status(404).send(null);
-     res.send(result)
-   } catch (err) {
-     
-     res.status(404).send(null)
-   }
+  try {
+    const { id } = req.params;
+    const result = await bookCollection.findOne({ _id: new ObjectId(id) });
+    if (!result) return res.status(404).send(null);
+    res.send(result)
+  } catch (err) {
+
+    res.status(404).send(null)
+  }
 })
- 
-app.patch('/books/:id',verifyToken ,async(req,res)=>{
-   const {id} = req.params
+
+app.patch('/books/:id', verifyToken, async (req, res) => {
+  const { id } = req.params
   const data = req.body;
-  const result = await bookCollection.updateOne({_id:new  ObjectId(id)},
-     {$set:data}
-    );
-   res.send(result);
+  const result = await bookCollection.updateOne({ _id: new ObjectId(id) },
+    { $set: data }
+  );
+  res.send(result);
 })
 
 
-app.delete('/book/:id',verifyToken, async(req, res) => {
-  const {id} = req.params
-  const result = await bookCollection.deleteOne({_id: new ObjectId(id)})
+app.delete('/book/:id', verifyToken, async (req, res) => {
+  const { id } = req.params
+  const result = await bookCollection.deleteOne({ _id: new ObjectId(id) })
   res.json(result)
 })
 
-app.post("/borrows",verifyToken, async (req, res) => {
+app.post("/borrows", verifyToken, async (req, res) => {
   try {
     const borrowData = req.body;
     const { bookId, userEmail } = borrowData;
@@ -147,7 +156,7 @@ app.post("/borrows",verifyToken, async (req, res) => {
     });
   }
 });
-app.post('/borrow', async(req, res) => {
+app.post('/borrow', async (req, res) => {
   const data = req.body
   const result = await borrowCollection.insertOne(data)
   res.send(result)
@@ -155,7 +164,7 @@ app.post('/borrow', async(req, res) => {
 
 
 
-app.get("/my-borrows",verifyToken, async (req, res) => {
+app.get("/my-borrows", verifyToken, async (req, res) => {
   try {
     const { email } = req.query;
 
@@ -185,7 +194,7 @@ app.get("/my-borrows",verifyToken, async (req, res) => {
   }
 });
 
-app.delete("/borrows/:id",verifyToken, async (req, res) => {
+app.delete("/borrows/:id", verifyToken, async (req, res) => {
   try {
     const { id } = req.params;
 
