@@ -29,11 +29,20 @@ const db = mongoClient.db("booknook_db")
 const bookCollection =  db.collection("book")
 const borrowCollection = db.collection('borrows');
 
+const verifyToken  = async(req,res,next) =>{
+  const authHeader = req.headers.authorization;
+  console.log(authHeader);
+
+  if(authHeader !== "user logged in "){
+    return res.status(401).send({msg: "Unauthorize"});
+  }
+  console.log('i am');
+  next();
+}
 
 
 
-
-app.post('/add-book', async (req,res) =>{
+app.post('/add-book',verifyToken , async (req,res) =>{
 
   const data = req.body
   data.totalCopies = Number(data.totalCopies);
@@ -47,7 +56,9 @@ app.get('/books',async (req,res) =>{
      res.send(result);
 })
 
-app.get('/books/:id',async(req,res) =>{
+app.get('/books/:id',verifyToken ,async(req,res) =>{
+const authHeader = req.headers.authorization;
+  console.log(authHeader)
    try {
      const {id} =req.params;
      const result = await bookCollection.findOne({_id:new ObjectId(id)});
@@ -59,7 +70,7 @@ app.get('/books/:id',async(req,res) =>{
    }
 })
  
-app.patch('/books/:id',async(req,res)=>{
+app.patch('/books/:id',verifyToken ,async(req,res)=>{
    const {id} = req.params
   const data = req.body;
   const result = await bookCollection.updateOne({_id:new  ObjectId(id)},
@@ -69,13 +80,13 @@ app.patch('/books/:id',async(req,res)=>{
 })
 
 
-app.delete('/book/:id', async(req, res) => {
+app.delete('/book/:id',verifyToken, async(req, res) => {
   const {id} = req.params
   const result = await bookCollection.deleteOne({_id: new ObjectId(id)})
   res.json(result)
 })
 
-app.post("/borrows", async (req, res) => {
+app.post("/borrows",verifyToken, async (req, res) => {
   try {
     const borrowData = req.body;
     const { bookId, userEmail } = borrowData;
@@ -144,7 +155,7 @@ app.post('/borrow', async(req, res) => {
 
 
 
-app.get("/my-borrows", async (req, res) => {
+app.get("/my-borrows",verifyToken, async (req, res) => {
   try {
     const { email } = req.query;
 
@@ -174,7 +185,7 @@ app.get("/my-borrows", async (req, res) => {
   }
 });
 
-app.delete("/borrows/:id", async (req, res) => {
+app.delete("/borrows/:id",verifyToken, async (req, res) => {
   try {
     const { id } = req.params;
 
