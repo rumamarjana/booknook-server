@@ -19,7 +19,13 @@ export async function connectToMongoDB() {
     console.dir(err);
   }
 }
-app.use(cors())
+// app.use(cors())
+app.use(cors({
+  origin: [
+    "https://booknook-topaz-eight.vercel.app",
+  ],
+  credentials: true,
+}));
 app.use(express.json())
 
 
