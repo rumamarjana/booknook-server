@@ -39,62 +39,62 @@ const JWKS = createRemoteJWKSet(
   new URL(`${process.env.JWKS_URL}/api/auth/jwks`)
 );
 
-const verifyToken = async (req, res, next) => {
-  try {
-    const authHeader = req.headers.authorization;
-
-    if (!authHeader?.startsWith("Bearer ")) {
-      return res.status(401).json({
-        success: false,
-        message: "Authorization token missing!",
-      });
-    }
-
-    const token = authHeader.split(" ")[1];
-
-    const { payload } = await jwtVerify(token, JWKS);
-
-    // Save authenticated user information
-    req.user = payload;
-
-    console.log("Verified JWT payload:", payload);
-
-    next();
-
-  } catch (error) {
-    console.error("JWT Verification Error:", error);
-
-    return res.status(401).json({
-      success: false,
-      message: "Invalid or expired token!",
-    });
-  }
-};
-
 // const verifyToken = async (req, res, next) => {
-//   const authHeader = req.headers.authorization;
-//   if (!authHeader) {
-//     return res.status(401).send({ msg: "Unauthorized!" });
-//   }
-//   const token = authHeader.split(" ")[1];
-//   if (!token) {
-//     return res.status(401).send({ msg: "Unauthorized!" });
-//   }
+//   try {
+//     const authHeader = req.headers.authorization;
 
+//     if (!authHeader?.startsWith("Bearer ")) {
+//       return res.status(401).json({
+//         success: false,
+//         message: "Authorization token missing!",
+//       });
+//     }
 
+//     const token = authHeader.split(" ")[1];
 
-//      const JWKS = createRemoteJWKSet(
-//     new URL(`${process.env.JWKS_URL}/api/auth/jwks`),
-//   );
-
-//  try {
 //     const { payload } = await jwtVerify(token, JWKS);
-//     next();
-//   } catch (error) {
-//     return res.status(401).send({ msg: "Server Error!" });
-//   }
 
-// }
+//     // Save authenticated user information
+//     req.user = payload;
+
+//     console.log("Verified JWT payload:", payload);
+
+//     next();
+
+//   } catch (error) {
+//     console.error("JWT Verification Error:", error);
+
+//     return res.status(401).json({
+//       success: false,
+//       message: "Invalid or expired token!",
+//     });
+//   }
+// };
+
+const verifyToken = async (req, res, next) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader) {
+    return res.status(401).send({ msg: "Unauthorized!" });
+  }
+  const token = authHeader.split(" ")[1];
+  if (!token) {
+    return res.status(401).send({ msg: "Unauthorized!" });
+  }
+
+
+
+     const JWKS = createRemoteJWKSet(
+    new URL(`${process.env.JWKS_URL}/api/auth/jwks`),
+  );
+
+ try {
+    const { payload } = await jwtVerify(token, JWKS);
+    next();
+  } catch (error) {
+    return res.status(401).send({ msg: "Server Error!" });
+  }
+
+}
 
 
 
