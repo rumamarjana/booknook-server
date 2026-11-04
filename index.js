@@ -51,7 +51,7 @@ const verifyToken = async (req, res, next) => {
     const { payload } = await jwtVerify(token, JWKS);
     next();
   } catch (error) {
-    return res.status(500).send({ msg: "Server Error!" });
+    return res.status(401).send({ msg: "Server Error!" });
   }
 
 }
