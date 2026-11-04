@@ -3,6 +3,7 @@ import { MongoClient, ObjectId } from 'mongodb';
 import 'dotenv/config';
 import cors from 'cors'
 import { createRemoteJWKSet, jwtVerify } from 'jose';
+
 const app = express();
 const PORT = 8000;
 
@@ -173,29 +174,30 @@ app.post('/borrow', async (req, res) => {
 
 app.get("/my-borrows", verifyToken, async (req, res) => {
   try {
-    const { email } = req.query;
-
-    console.log("Requested Email:", email);
+    // Get logged-in user's email from JWT
+    const email = req.user?.email;
 
     if (!email) {
-      return res.status(400).send({
-        message: "Email is required",
+      return res.status(401).json({
+        success: false,
+        message: "User email not found!",
       });
     }
+
+    console.log("Requested Email:", email);
 
     const result = await borrowCollection
       .find({ userEmail: email })
       .sort({ createdAt: -1 })
       .toArray();
 
-    console.log("Borrowed Books:", result);
-
-    res.status(200).send(result);
+    res.status(200).json(result);
 
   } catch (error) {
     console.error("GET MY BORROWS ERROR:", error);
 
-    res.status(500).send({
+    res.status(500).json({
+      success: false,
       message: "Failed to fetch borrowed books",
     });
   }
